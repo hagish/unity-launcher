@@ -1,0 +1,10 @@
+5.5
+C:\Program Files\Unity-5.5\Editor\Unity.exe
+
+5.6
+C:\Program Files\Unity-5.6\Editor\Unity.exe
+
+---
+
+C:\Users\hagis\projects1
+D:\projects2
