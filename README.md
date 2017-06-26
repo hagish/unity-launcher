@@ -46,5 +46,5 @@ D:\projects2
 ```
 
 ## Disclaimer
-* The code is ugly but does the job. I merely wrote a little tool to get the job done.
+* The code is ugly and will not win an engineering award :). I merely wrote a little tool to get the job done.
 * If you have many many projects and deep subfolder structures in the second part of the config the tool can get slow. At the moment there is no caching or whatsoever.
