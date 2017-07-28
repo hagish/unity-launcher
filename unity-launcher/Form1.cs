@@ -165,9 +165,14 @@ namespace unity_launcher
             try {
                 var path = pathToAssets.Substring(0, pathToAssets.Length - "\\Assets".Length);
                 var version = File.ReadAllText(path + "\\ProjectSettings\\ProjectVersion.txt").Replace("m_EditorVersion: ", "").Trim();
+                var name = path.Replace(removePrefixInPath, "").Trim().Trim('\\', '/');
+                if(name.Length == 0) {
+                    name = Path.GetFileName(path);
+                }
+
                 return new Project() {
                     Path = path,
-                    Name = path.Replace(removePrefixInPath, "").Trim().Trim('\\', '/'),
+                    Name = name,
                     UnityVersion = version,
                 };
             }
