@@ -114,6 +114,14 @@ namespace unity_launcher
                     Path = it.Value,
                 });
                 control.Click += Control_Click;
+
+                var tooltip = new ToolTip();
+                control.MouseHover += new EventHandler(delegate (object sender, EventArgs e)
+                {
+                    var btn = (Button)sender;
+                    tooltip.SetToolTip(btn, it.Value);
+                });
+
                 flowLayoutPanel1.Controls.Add(control);
             }
 
@@ -132,6 +140,14 @@ namespace unity_launcher
                     Arguments = string.Format("-projectPath \"{0}\"", it.Path),
                 });
                 control.Click += Control_Click;
+
+                var tooltip = new ToolTip();
+                control.MouseHover += new EventHandler(delegate (object sender, EventArgs e)
+                {
+                    var btn = (Button)sender;
+                    tooltip.SetToolTip(btn, it.Path);
+                });
+
                 flowLayoutPanel1.Controls.Add(control);
             }
 
