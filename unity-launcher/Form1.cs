@@ -9,11 +9,55 @@ namespace unity_launcher
 {
     public partial class Form1 : Form
     {
-        private class PathButton
+        interface IButton
+        {
+            void Execute(Form f);
+            Button GetButton();
+        }
+        class UnityButton : IButton
+        {
+            public Button Button;
+            public string UnityPath;
+
+            public void Execute(Form f) {
+                System.Diagnostics.Process.Start(UnityPath);
+                f.Close();
+            }
+
+            public Button GetButton() {
+                return Button;
+            }
+        }
+
+        class ProjectButton : IButton
+        {
+            public Button Button;
+            public string UnityPath;
+            public string ProjectPath;
+
+            public void Execute(Form f) {
+                var arguments = string.Format("-projectPath \"{0}\"", ProjectPath);
+                System.Diagnostics.Process.Start(UnityPath, arguments);
+                f.Close();
+            }
+
+            public Button GetButton() {
+                return Button;
+            }
+        }
+
+        class ExplorerButton : IButton
         {
             public Button Button;
             public string Path;
-            public string Arguments;
+
+            public void Execute(Form f) {
+                System.Diagnostics.Process.Start(Path);
+            }
+
+            public Button GetButton() {
+                return Button;
+            }
         }
 
         private class Project {
@@ -22,8 +66,7 @@ namespace unity_launcher
             public string Path;
         }
 
-        private List<PathButton> unitys = new List<PathButton>();
-        private List<PathButton> projects = new List<PathButton>();
+        List<IButton> buttons = new List<IButton>();
 
         public Form1()
         {
@@ -108,10 +151,10 @@ namespace unity_launcher
                 var control = new Button() {
                     Text = it.Key,
                 };
-                this.unitys.Add(new PathButton()
+                this.buttons.Add(new UnityButton()
                 {
                     Button = control,
-                    Path = it.Value,
+                    UnityPath = it.Value,
                 });
                 control.Click += Control_Click;
 
@@ -131,15 +174,16 @@ namespace unity_launcher
                 var unity = FindBestUnityVersion(unitys, it.UnityVersion);
                 if (unity == null) continue;
 
+                // button to open unity project
                 var control = new Button() {
                     Text = string.Format("{0} | {1}", it.Name, it.UnityVersion),
-                    Width = 400,
+                    Width = 300,
                     TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
                 };
-                this.unitys.Add(new PathButton() {
+                this.buttons.Add(new ProjectButton() {
                     Button = control,
-                    Path = unity,
-                    Arguments = string.Format("-projectPath \"{0}\"", it.Path),
+                    UnityPath = unity,
+                    ProjectPath = it.Path,
                 });
                 control.Click += Control_Click;
 
@@ -152,7 +196,22 @@ namespace unity_launcher
                     tooltip.SetToolTip(btn, bound.Path);
                 });
 
+                // button to open project path
+                var explorerButton = new Button()
+                {
+                    Text = string.Format("Explorer"),
+                    TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                };
+                this.buttons.Add(new ExplorerButton()
+                {
+                    Button = explorerButton,
+                    Path = it.Path,
+                });
+                explorerButton.Click += Control_Click;
+
+                // set layout
                 flowLayoutPanel1.Controls.Add(control);
+                flowLayoutPanel1.Controls.Add(explorerButton);
             }
 
 
@@ -220,22 +279,9 @@ namespace unity_launcher
 
         private void Control_Click(object sender, EventArgs e)
         {
-            {
-                var pathButton = unitys.FirstOrDefault(it => it.Button == sender);
-                if (pathButton != null)
-                {
-                    if (string.IsNullOrEmpty(pathButton.Arguments)) System.Diagnostics.Process.Start(pathButton.Path);
-                    else System.Diagnostics.Process.Start(pathButton.Path, pathButton.Arguments);
-                    Close();
-                }
-            }
-
-            {
-                var project = projects.FirstOrDefault(it => it.Button == sender);
-                if (project != null) {
-                    System.Diagnostics.Process.Start(project.Path);
-                    Close();
-                }
+            var button = buttons.FirstOrDefault(it => it.GetButton() == sender);
+            if(button != null) {
+                button.Execute(this);
             }
         }
 
