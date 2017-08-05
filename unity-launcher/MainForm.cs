@@ -7,13 +7,58 @@ using System.Windows.Forms;
 
 namespace unity_launcher
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
-        private class PathButton
+        interface IButton
+        {
+            void Execute(Form f);
+            Button GetButton();
+        }
+
+        class UnityButton : IButton
+        {
+            public Button Button;
+            public string UnityPath;
+
+            public void Execute(Form f) {
+                System.Diagnostics.Process.Start(UnityPath);
+                f.Close();
+            }
+
+            public Button GetButton() {
+                return Button;
+            }
+        }
+
+        class ProjectButton : IButton
+        {
+            public Button Button;
+            public string UnityPath;
+            public string ProjectPath;
+
+            public void Execute(Form f) {
+                var arguments = string.Format("-projectPath \"{0}\"", ProjectPath);
+                System.Diagnostics.Process.Start(UnityPath, arguments);
+                f.Close();
+            }
+
+            public Button GetButton() {
+                return Button;
+            }
+        }
+
+        class ExplorerButton : IButton
         {
             public Button Button;
             public string Path;
-            public string Arguments;
+
+            public void Execute(Form f) {
+                System.Diagnostics.Process.Start(Path);
+            }
+
+            public Button GetButton() {
+                return Button;
+            }
         }
 
         private class Project {
@@ -22,10 +67,9 @@ namespace unity_launcher
             public string Path;
         }
 
-        private List<PathButton> unitys = new List<PathButton>();
-        private List<PathButton> projects = new List<PathButton>();
+        List<IButton> buttons = new List<IButton>();
 
-        public Form1()
+        public MainForm()
         {
             InitializeComponent();
 
@@ -103,15 +147,18 @@ namespace unity_launcher
                 projects.AddRange(assetFolders.Select(it => GetProjectInfo(it, root)).Where(it => it != null));
             }
 
+
+            tableLayoutPanelUnitys.ColumnCount = unitys.Count;
+            int idx = 0;
             foreach (var it in unitys)
             {
                 var control = new Button() {
                     Text = it.Key,
                 };
-                this.unitys.Add(new PathButton()
+                this.buttons.Add(new UnityButton()
                 {
                     Button = control,
-                    Path = it.Value,
+                    UnityPath = it.Value,
                 });
                 control.Click += Control_Click;
 
@@ -124,22 +171,35 @@ namespace unity_launcher
                     tooltip.SetToolTip(btn, bound.Value);
                 });
 
-                flowLayoutPanel1.Controls.Add(control);
+                tableLayoutPanelUnitys.Controls.Add(control);
+
+                if (tableLayoutPanelUnitys.ColumnStyles.Count <= idx) {
+                    tableLayoutPanelUnitys.ColumnStyles.Add(new ColumnStyle());
+                }
+                tableLayoutPanelUnitys.ColumnStyles[idx] = new ColumnStyle() {
+                    SizeType = SizeType.AutoSize,
+                };
+
+                ++idx;
             }
 
-            foreach(var it in projects.OrderBy(it => it.Name)) {
+            idx = 0;
+            foreach (var it in projects.OrderBy(it => it.Name)) {
                 var unity = FindBestUnityVersion(unitys, it.UnityVersion);
                 if (unity == null) continue;
 
+                tableLayoutPanelProjects.RowCount = idx + 1;
+
+                // button to open unity project
                 var control = new Button() {
                     Text = string.Format("{0} | {1}", it.Name, it.UnityVersion),
-                    Width = 400,
+                    Width = 300,
                     TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
                 };
-                this.unitys.Add(new PathButton() {
+                this.buttons.Add(new ProjectButton() {
                     Button = control,
-                    Path = unity,
-                    Arguments = string.Format("-projectPath \"{0}\"", it.Path),
+                    UnityPath = unity,
+                    ProjectPath = it.Path,
                 });
                 control.Click += Control_Click;
 
@@ -152,7 +212,35 @@ namespace unity_launcher
                     tooltip.SetToolTip(btn, bound.Path);
                 });
 
-                flowLayoutPanel1.Controls.Add(control);
+                // button to open project path
+                var explorerButton = new Button() {
+                    Text = "Browse",
+                    TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                };
+                this.buttons.Add(new ExplorerButton()
+                {
+                    Button = explorerButton,
+                    Path = it.Path,
+                });
+                explorerButton.Click += Control_Click;
+
+                // set layout
+                tableLayoutPanelProjects.Controls.Add(control);
+                tableLayoutPanelProjects.Controls.Add(explorerButton);
+
+                control.AutoSize = true;
+                control.AutoSizeMode = AutoSizeMode.GrowOnly;
+                explorerButton.AutoSize = true;
+                explorerButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+
+                if (tableLayoutPanelProjects.RowStyles.Count <= idx) {
+                    tableLayoutPanelProjects.RowStyles.Add(new RowStyle());
+                }
+                tableLayoutPanelProjects.RowStyles[idx] = new RowStyle() {
+                    SizeType = SizeType.AutoSize,
+                };
+
+                ++idx;
             }
 
 
@@ -202,7 +290,7 @@ namespace unity_launcher
         }
 
         private IEnumerable<string> FindAssetsFolders(string root) {
-            return EnumDirectoriesDeep(root, it => it.Contains("\\.") || it.Contains("/.") || 
+            return Utils.EnumDirectoriesDeep(root, it => it.Contains("\\.") || it.Contains("/.") || 
                 it.EndsWith("\\Library") || it.EndsWith("/Library") || 
                 it.EndsWith("\\Assets") || it.EndsWith("/Assets"))
                     .Where(it => it.EndsWith("/Assets") || it.EndsWith("\\Assets"));
@@ -220,58 +308,23 @@ namespace unity_launcher
 
         private void Control_Click(object sender, EventArgs e)
         {
-            {
-                var pathButton = unitys.FirstOrDefault(it => it.Button == sender);
-                if (pathButton != null)
-                {
-                    if (string.IsNullOrEmpty(pathButton.Arguments)) System.Diagnostics.Process.Start(pathButton.Path);
-                    else System.Diagnostics.Process.Start(pathButton.Path, pathButton.Arguments);
-                    Close();
-                }
-            }
-
-            {
-                var project = projects.FirstOrDefault(it => it.Button == sender);
-                if (project != null) {
-                    System.Diagnostics.Process.Start(project.Path);
-                    Close();
-                }
+            var button = buttons.FirstOrDefault(it => it.GetButton() == sender);
+            if(button != null) {
+                button.Execute(this);
             }
         }
 
-        public static IEnumerable<string> EnumDirectoriesDeep(string root, Func<string, bool> callbackSkip) {
-            yield return root;
-
-            foreach (string d in Directory.GetDirectories(root)) {
-                if (callbackSkip(d)) yield return d;
-                else foreach (var it in EnumDirectoriesDeep(d, callbackSkip)) {
-                    yield return it;
-                }
-            }
-        }
-
-        public static IEnumerable<string> EnumFilesDeep(string root, Func<string, bool> callbackSkip) {
-            foreach (string f in Directory.GetFiles(root)) {
-                if (callbackSkip(f)) continue;
-                yield return f;
-            }
-
-            foreach (string d in Directory.GetDirectories(root)) {
-                if (callbackSkip(d)) continue;
-                foreach (var it in EnumFilesDeep(d, callbackSkip)) {
-                    if (callbackSkip(it)) continue;
-                    yield return it;
-                }
-            }
-        }
-
-        private void Form1_KeyDown(object sender, KeyEventArgs e) {
+        private void MainForm_KeyDown(object sender, KeyEventArgs e) {
             if (e.KeyCode == Keys.Escape) {
                 this.Close();
             }
         }
 
-        private void Form1_Load(object sender, EventArgs e) {
+        private void MainForm_Load(object sender, EventArgs e) {
+
+        }
+
+        private void tableLayoutPanel1_Paint(object sender, PaintEventArgs e) {
 
         }
     }
