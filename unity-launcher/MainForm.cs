@@ -148,7 +148,6 @@ namespace unity_launcher
             }
 
 
-            tableLayoutPanelUnitys.ColumnCount = unitys.Count;
             int idx = 0;
             foreach (var it in unitys)
             {
@@ -171,14 +170,7 @@ namespace unity_launcher
                     tooltip.SetToolTip(btn, bound.Value);
                 });
 
-                tableLayoutPanelUnitys.Controls.Add(control);
-
-                if (tableLayoutPanelUnitys.ColumnStyles.Count <= idx) {
-                    tableLayoutPanelUnitys.ColumnStyles.Add(new ColumnStyle());
-                }
-                tableLayoutPanelUnitys.ColumnStyles[idx] = new ColumnStyle() {
-                    SizeType = SizeType.AutoSize,
-                };
+                flowLayoutPanelUnitys.Controls.Add(control);
 
                 ++idx;
             }
