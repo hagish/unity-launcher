@@ -39,6 +39,12 @@ C:\Program Files\Unity-5.5\Editor\Unity.exe
 5.6
 C:\Program Files\Unity-5.6\Editor\Unity.exe
 
+2017.1
+D:\Unity-2017.1\Editor\Unity.exe
+
+2017.2
+D:\Unity-2017.2\Editor\Unity.exe
+
 ---
 
 C:\Users\hagis\projects1
